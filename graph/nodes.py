@@ -40,8 +40,8 @@ JUSTIFICATIVA: <breve analise em 1-2 frases>"""
     try:
         resp = _get_llm().invoke(prompt)
         analise = resp.content
-    except Exception as e:
-        analise = f"CLASSIFICACAO: PROBLEMATICO\nCATEGORIA: erro\nJUSTIFICATIVA: Falha na analise ({e}). Encaminhado para revisao humana."
+    except Exception:
+        analise = "CLASSIFICACAO: PROBLEMATICO\nCATEGORIA: erro\nJUSTIFICATIVA: Falha na analise. Encaminhado para revisao humana."
 
     status = "Problematico" if "PROBLEMATICO" in analise.upper() else "Aprovado"
 
@@ -66,8 +66,8 @@ def agente_pesquisador_politicas(state: AgentState) -> dict:
             ])
         else:
             externo = str(resultados)[:400]
-    except Exception as e:
-        externo = f"(busca externa indisponivel: {e})"
+    except Exception:
+        externo = "(busca externa indisponivel)"
 
     politicas = f"DIRETRIZES INTERNAS:\n{DIRETRIZES}\n\nCONTEXTO EXTERNO:\n{externo}"
     return {"politicas_relevantes": politicas}
@@ -94,8 +94,8 @@ JUSTIFICATIVA: <texto>"""
     try:
         resp = _get_llm().invoke(prompt)
         conteudo = resp.content
-    except Exception as e:
-        conteudo = f"ACAO: REMOVER\nJUSTIFICATIVA: Erro na revisao ({e}). Recomendado revisao humana."
+    except Exception:
+        conteudo = "ACAO: REMOVER\nJUSTIFICATIVA: Erro na revisao. Recomendado revisao humana."
 
     return {
         "justificativa_final": conteudo,
