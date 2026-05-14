@@ -5,6 +5,8 @@ venv/
 .venv/
 *.sqlite
 checkpoints.sqlite
+grafo.mmd
+grafo.png
 .DS_Store
 .idea/
 *.swp

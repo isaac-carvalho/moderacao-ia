@@ -9,11 +9,13 @@ import sys
 import os
 
 from dotenv import load_dotenv
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from graph.builder import build_graph
-
+# DEVE ser chamado ANTES de qualquer import que inicialize o LLM
+# (graph/nodes.py chama get_llm() no nivel do modulo)
 load_dotenv()
+
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from graph.builder import build_graph
 
 # Valida chaves antes de iniciar
 for key in ("OPENAI_API_KEY", "TAVILY_API_KEY"):
@@ -61,6 +63,10 @@ async def run():
         else:
             comentario = escolha
 
+        if not comentario:
+            print("Erro: comentario nao pode ser vazio.")
+            return
+
         print(f"\nComentario a moderar: \"{comentario}\"")
         print("-" * 60)
 
@@ -72,7 +78,9 @@ async def run():
         # --- Executa ate a interrupcao ---
         async for event in graph.astream(initial_state, config):
             for node, payload in event.items():
-                if node == "__end__":
+                if node in ("__end__", "__interrupt__"):
+                    continue
+                if not isinstance(payload, dict):
                     continue
                 print(f"\n[AGENTE: {node}]")
                 for k, v in payload.items():
@@ -124,7 +132,9 @@ async def run():
         # --- Retoma execucao ---
         async for event in graph.astream(None, config):
             for node, payload in event.items():
-                if node == "__end__":
+                if node in ("__end__", "__interrupt__"):
+                    continue
+                if not isinstance(payload, dict):
                     continue
                 print(f"\n[CONTINUACAO - AGENTE: {node}]")
 
@@ -132,4 +142,7 @@ async def run():
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nModeracao interrompida pelo usuario.")

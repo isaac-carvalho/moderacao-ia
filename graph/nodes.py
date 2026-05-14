@@ -12,7 +12,16 @@ from graph.state import AgentState
 _dir = Path(__file__).resolve().parent.parent / "policies" / "diretrizes.txt"
 DIRETRIZES = _dir.read_text(encoding="utf-8") if _dir.exists() else ""
 
-llm = get_llm()
+# Lazy init: evita chamar get_llm() antes do load_dotenv() no main.py
+_llm = None
+
+
+def _get_llm():
+    """Retorna o LLM, inicializando na primeira chamada (singleton lazy)."""
+    global _llm
+    if _llm is None:
+        _llm = get_llm()
+    return _llm
 
 
 def agente_analisador(state: AgentState) -> dict:
@@ -29,7 +38,7 @@ CATEGORIA: <categoria ou N/A>
 JUSTIFICATIVA: <breve analise em 1-2 frases>"""
 
     try:
-        resp = llm.invoke(prompt)
+        resp = _get_llm().invoke(prompt)
         analise = resp.content
     except Exception as e:
         analise = f"CLASSIFICACAO: PROBLEMATICO\nCATEGORIA: erro\nJUSTIFICATIVA: Falha na analise ({e}). Encaminhado para revisao humana."
@@ -83,7 +92,7 @@ ACAO: <APROVAR|REMOVER|EDITAR>
 JUSTIFICATIVA: <texto>"""
 
     try:
-        resp = llm.invoke(prompt)
+        resp = _get_llm().invoke(prompt)
         conteudo = resp.content
     except Exception as e:
         conteudo = f"ACAO: REMOVER\nJUSTIFICATIVA: Erro na revisao ({e}). Recomendado revisao humana."
