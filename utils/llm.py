@@ -13,4 +13,6 @@ def get_llm():
     return ChatOpenAI(
         model="gpt-3.5-turbo",
         temperature=0.2,
+        request_timeout=30,
+        max_retries=2,
     )

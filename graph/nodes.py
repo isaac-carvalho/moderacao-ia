@@ -1,8 +1,11 @@
+import logging
 import os
 from pathlib import Path
 
 from langchain_core.messages import AIMessage
 from langchain_tavily import TavilySearch
+
+log = logging.getLogger(__name__)
 
 from utils.llm import get_llm
 from graph.state import AgentState
@@ -105,10 +108,6 @@ JUSTIFICATIVA: <texto>"""
 
 def executar_acao_final(state: AgentState) -> dict:
     """Executa a acao final (no real world: atualiza banco de dados)."""
-    print("\n" + "=" * 50)
-    print("ACAO EXECUTADA")
-    print("=" * 50)
-    print(f"Status: {state['status_da_moderacao']}")
-    print(f"Justificativa: {state['justificativa_final']}")
-    print("=" * 50)
+    log.info("ACAO EXECUTADA — Status: %s | Justificativa: %s",
+             state['status_da_moderacao'], state['justificativa_final'])
     return {}
