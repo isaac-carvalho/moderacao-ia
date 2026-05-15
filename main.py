@@ -4,9 +4,12 @@
 # ============================================================
 
 import asyncio
+import logging
 import uuid
 import sys
 import os
+
+log = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 
@@ -21,7 +24,7 @@ from graph.builder import build_graph
 for key in ("OPENAI_API_KEY", "TAVILY_API_KEY"):
     val = os.getenv(key, "")
     if not val or val == "sua_chave_aqui":
-        print(f"Erro: {key} nao configurada no .env")
+        log.error("%s nao configurada no .env", key)
         sys.exit(1)
 
 
@@ -44,17 +47,17 @@ async def run():
             mermaid = graph.get_graph().draw_mermaid()
             with open("grafo.mmd", "w") as f:
                 f.write(mermaid)
-            print("Diagrama salvo em grafo.mmd")
+            log.info("Diagrama salvo em grafo.mmd")
         except Exception:
             pass
 
-        print("\n" + "=" * 60)
-        print("SISTEMA DE MODERACAO DE CONTEUDO — IA + Human in the Loop")
-        print("=" * 60)
+        log.info("=" * 60)
+        log.info("SISTEMA DE MODERACAO DE CONTEUDO — IA + Human in the Loop")
+        log.info("=" * 60)
 
-        print("\nExemplos disponiveis:")
+        log.info("Exemplos disponiveis:")
         for i, ex in enumerate(EXEMPLOS, 1):
-            print(f"  {i}. {ex[:60]}...")
+            log.info("  %d. %s...", i, ex[:60])
 
         escolha = input("\nEscolha um numero (1-5) ou digite um comentario: ").strip()
 
@@ -64,11 +67,11 @@ async def run():
             comentario = escolha
 
         if not comentario:
-            print("Erro: comentario nao pode ser vazio.")
+            log.error("Comentario nao pode ser vazio.")
             return
 
-        print(f"\nComentario a moderar: \"{comentario}\"")
-        print("-" * 60)
+        log.info("Comentario a moderar: \"%s\"", comentario)
+        log.info("-" * 60)
 
         thread_id = str(uuid.uuid4())
         config = {"configurable": {"thread_id": thread_id}}
@@ -82,26 +85,26 @@ async def run():
                     continue
                 if not isinstance(payload, dict):
                     continue
-                print(f"\n[AGENTE: {node}]")
+                log.info("[AGENTE: %s]", node)
                 for k, v in payload.items():
                     if k != "messages":
-                        print(f"  {k}: {str(v)[:300]}")
+                        log.info("  %s: %s", k, str(v)[:300])
 
         # --- Verifica se ha interrupcao (HITL) ---
         snapshot = await graph.aget_state(config)
 
         if not snapshot.next:
             # Fluxo terminou sem interrupcao (comentario aprovado automaticamente)
-            print("\nComentario aprovado automaticamente (nenhum problema detectado).")
+            log.info("Comentario aprovado automaticamente (nenhum problema detectado).")
             return
 
         # --- Etapa 2 + 3: Intervencao humana ---
-        print("\n" + "=" * 60)
-        print("PAUSA PARA REVISAO HUMANA")
-        print("=" * 60)
-        print(f"\nRecomendacao do agente:\n{snapshot.values.get('justificativa_final', '')}")
-        print(f"\nAnalise: {snapshot.values.get('analise_do_agente', '')[:200]}")
-        print("-" * 60)
+        log.info("=" * 60)
+        log.info("PAUSA PARA REVISAO HUMANA")
+        log.info("=" * 60)
+        log.info("Recomendacao do agente:\n%s", snapshot.values.get('justificativa_final', ''))
+        log.info("Analise: %s", snapshot.values.get('analise_do_agente', '')[:200])
+        log.info("-" * 60)
 
         decisao = input("\nEscolha: [sim] confirmar | [nao] cancelar | [editar] modificar: ").strip().lower()
 
@@ -118,7 +121,7 @@ async def run():
                     "status_da_moderacao": novo_status,
                 },
             )
-            print("\nEstado atualizado com intervencao humana.")
+            log.info("Estado atualizado com intervencao humana.")
 
         elif decisao == "nao":
             await graph.aupdate_state(
@@ -136,9 +139,9 @@ async def run():
                     continue
                 if not isinstance(payload, dict):
                     continue
-                print(f"\n[CONTINUACAO - AGENTE: {node}]")
+                log.info("[CONTINUACAO - AGENTE: %s]", node)
 
-        print("\nModeracao concluida.")
+        log.info("Moderacao concluida.")
 
 
 if __name__ == "__main__":
